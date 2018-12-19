@@ -17,6 +17,8 @@ export class Pokemon {
   fastMove: string;
   specialMove: string;
   gender: number;
+  catchYear: number;
+  levelUp: boolean;
   possibleIVs: Iv[];
 
   constructor(private referenceDataService: ReferenceDataService) {

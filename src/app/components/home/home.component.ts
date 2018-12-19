@@ -73,28 +73,38 @@ export class HomeComponent implements OnInit {
       .pipe(
         filter(log => log.includes('Received values:')),
         map((log: string) => {
-          const regexMath = /Received values: Id: ([^,]*), Nr: ([^,]*), CP: ([^,]*), Max HP: ([^,]*), Dust cost: ([^,]*), Level: ([^,]*), FastMove ([^,]*), SpecialMove ([^,]*), Gender ([^,]*)/.exec(log);
+          const regexMath = /Received values: (.*)/.exec(log);
           if (regexMath) {
-            const [, idString, pokedexId, cp, hp, dust, level, fastMove, specialMove, gender] = regexMath;
-            const [, id, pokemonName] = /(\d*) \(([^\)]*)\)/.exec(idString);
+            const receivedValues: any = regexMath[1].split(',').map(v => v.trim()).reduce((acc, receivedValue) => {
+              let [key, value] = receivedValue.split(':').map(v => v.trim());
+              if (!value) {
+                [key, value] = key.split(' ');
+              }
+              acc[key.replace(/[- ]/g, '')] = value;
+              return acc;
+            }, {});
+
+            const [, id, pokemonName] = /(\d*) \(([^\)]*)\)/.exec(receivedValues.Id);
 
             const pokemon = new Pokemon(this.referenceDataService);
-            pokemon.formId = Number.parseInt(id);
+            pokemon.formId = Number.parseInt(id, 10);
             pokemon.name = pokemonName;
-            pokemon.pokedexId = Number.parseInt(pokedexId);
+            pokemon.pokedexId = Number.parseInt(receivedValues.Nr, 10);
 
             if (pokemon.pokedexId > 0) {
               const foundPokemon = this.findPokemon(pokemon.pokedexId, pokemonName);
               pokemon.pid = foundPokemon.pid;
             }
 
-            pokemon.cp = Number.parseInt(cp);
-            pokemon.hp = Number.parseInt(hp);
-            pokemon.dust = Number.parseInt(dust);
-            pokemon.level = Number.parseInt(level);
-            pokemon.fastMove = fastMove;
-            pokemon.specialMove = specialMove;
-            pokemon.gender = Number.parseInt(gender);
+            pokemon.cp = Number.parseInt(receivedValues.CP, 10);
+            pokemon.hp = Number.parseInt(receivedValues.MaxHP, 10);
+            pokemon.dust = Number.parseInt(receivedValues.Dustcost, 10);
+            pokemon.level = Number.parseInt(receivedValues.Level, 10);
+            pokemon.fastMove = receivedValues.FastMove;
+            pokemon.specialMove = receivedValues.SpecialMove;
+            pokemon.gender = Number.parseInt(receivedValues.Gender, 10);
+            pokemon.catchYear = Number.parseInt(receivedValues.catchYear, 10);
+            pokemon.levelUp = receivedValues.Levelup.toLowerCase() === 'true';
             return pokemon;
           } else {
             console.error(`Doesn't match regexp: `, log);
